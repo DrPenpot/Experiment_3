@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.SequenceInputStream;
 import java.util.Random;
 
+import org.apache.curator.framework.recipes.locks.InterProcessReadWriteLock;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -20,9 +21,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.checkerframework.checker.units.qual.C;
 
 public class Sorting {
-    public static class SortingMap extends Mapper<LongWritable, Text, IntWritable, IntWritable>{
+    public static class SortingMapper extends Mapper<LongWritable, Text, Text, IntWritable>{
         private IntWritable one = new IntWritable(1);
-        private IntWritable merchant_id;
+        private Text itemId;
         private int mode;
 
 
@@ -34,17 +35,16 @@ public class Sorting {
                 IOException, InterruptedException{
 
             LogRelation data = new LogRelation(line.toString());
-            merchant_id =new IntWritable(data.getMerchant_id());
-            int action = data.getAction();
+            itemId =new Text(data.getItemId());
+            String action = data.getAction();
 //          记关注的数量
             if(mode == 1) {
-                context.write(merchant_id, one);
-//                System.out.println("1");
+                context.write(itemId, one);
             }
 //          记购买的数量
             else if(mode == 2) {
-                if (action == 2) {
-                    context.write(merchant_id, one);
+                if (action.equals("2")) {
+                    context.write(itemId, one);
                 }
             }
             else{
@@ -53,8 +53,8 @@ public class Sorting {
         }
     }
 
-    public static class SortingReduce extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable>{
-        public void reduce(IntWritable key, Iterable<IntWritable> value, Context context)throws 
+    public static class SortingReducer extends Reducer<Text, IntWritable, Text, IntWritable>{
+        public void reduce(Text key, Iterable<IntWritable> value, Context context)throws
                 IOException,InterruptedException{
             int sum = 0;
             for(IntWritable val : value){
@@ -85,14 +85,14 @@ public class Sorting {
         try {
             sortingJob.getConfiguration().setInt("mode", Integer.parseInt(args[2]));
 
-            sortingJob.setMapperClass(SortingMap.class);
-            sortingJob.setMapOutputKeyClass(IntWritable.class);
+            sortingJob.setMapperClass(SortingMapper.class);
+            sortingJob.setMapOutputKeyClass(Text.class);
             sortingJob.setMapOutputValueClass(IntWritable.class);
 
-            sortingJob.setCombinerClass(SortingReduce.class);
+            sortingJob.setCombinerClass(SortingReducer.class);
 
-            sortingJob.setReducerClass(SortingReduce.class);
-            sortingJob.setOutputKeyClass(IntWritable.class);
+            sortingJob.setReducerClass(SortingReducer.class);
+            sortingJob.setOutputKeyClass(Text.class);
             sortingJob.setOutputValueClass(IntWritable.class);
 
             sortingJob.setInputFormatClass(TextInputFormat.class);
@@ -108,18 +108,21 @@ public class Sorting {
 
                 job.setInputFormatClass(SequenceFileInputFormat.class);
                 job.setMapperClass(InverseMapper.class);
+                job.setMapOutputKeyClass(IntWritable.class);
+                job.setMapOutputValueClass(Text.class);
                 job.setNumReduceTasks(1);
 
                 FileOutputFormat.setOutputPath(job,new Path(args[1]));
 
                 job.setOutputKeyClass(IntWritable.class);
-                job.setOutputValueClass(IntWritable.class);
+                job.setOutputValueClass(Text.class);
                 job.setSortComparatorClass(IntWritableDecreasingComparator.class);
                 System.exit(job.waitForCompletion(true)?0:1);
             }
             System.out.println("finished!");
         }finally {
-            FileSystem.get(conf).delete(tempDir,true);
+            FileSystem fileSystem = tempDir.getFileSystem(conf);
+            fileSystem.delete(tempDir,true);
         }
     }
     
