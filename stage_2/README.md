@@ -219,9 +219,7 @@ Time taken: 53.473 seconds, Fetched: 20 row(s)
 ### 查询双11那天有多少人购买了商品
 
 查询购买人数：
-```sql
-SELECT item_id, COUNT(*) AS attention_num FROM million_user_log  GROUP BY item_id
-```
+
 ```sql
 SELECT COUNT(DISTINCT user_id)  FROM million_user_log WHERE action=2;
 ```
