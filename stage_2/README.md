@@ -50,7 +50,7 @@ Time taken: 1.494 seconds, Fetched: 5 row(s)
 
 ---
 
-###验证阶段一的结果：
+### 验证阶段一的结果：
 
 ```sql
 SELECT item_id, 
@@ -216,7 +216,7 @@ Time taken: 53.473 seconds, Fetched: 20 row(s)
 
 ---
 
-###查询双11那天有多少人购买了商品
+### 查询双11那天有多少人购买了商品
 
 查询购买人数：
 ```sql
@@ -297,7 +297,7 @@ Time taken: 25.919 seconds, Fetched: 1 row(s)
 
 ---
 
-###查询双11那天男女买家购买商品的比例
+### 查询双11那天男女买家购买商品的比例
 
 ```sql
 SELECT gender, COUNT(*)
@@ -347,7 +347,7 @@ Time taken: 26.692 seconds, Fetched: 3 row(s)
 ```
 ---
 
-###查询双11那天浏览次数前十的品牌
+### 查询双11那天浏览次数前十的品牌
 这个题目的表述有点不太清晰，我决定将“浏览”理解为“点击”
 
 ```sql
