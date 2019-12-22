@@ -7,7 +7,7 @@ val mlog = spark.read.format("csv").option("sep",",").option("header","false").o
 
 mlog.createOrReplaceTempView("mlog")
 
-val sqlLog = spark.sql("SELECT brand_id,COUNT(*) AS click_num FROM mlog WHERE action = 0 GROUP BY brand_id").sort(desc("click_num"))
+val mostViewedBrand = spark.sql("SELECT brand_id,COUNT(*) AS click_num FROM mlog WHERE action = 0 GROUP BY brand_id").sort(desc("click_num"))
 
 
 //统计购买最多的商品类别并输出
