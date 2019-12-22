@@ -1,3 +1,15 @@
+###阶段二
+
+---
+
+我自己的Docker容器HIVE启动一直报错，后来参考了助教镜像的使用方法，发现可能是启动之前数据库没有初始化，不过我发觉得太晚了，目前还没有试验过。
+
+以下的实验都是基于助教给出的镜像，其中几处设置有些小问题，稍加改动即可顺利运行。
+
+---
+
+####导入数据
+
 创建表
 ```sql
 CREATE TABLE 
@@ -50,7 +62,223 @@ Time taken: 1.494 seconds, Fetched: 5 row(s)
 
 ---
 
-### 验证阶段一的结果：
+#### 查询双11那天有多少人购买了商品
+
+查询购买人数：
+
+```sql
+SELECT COUNT(DISTINCT user_id)  FROM million_user_log WHERE action=2;
+```
+
+结果为*37202*
+
+```shell
+hive> SELECT COUNT(DISTINCT user_id)  FROM million_user_log WHERE action=2;
+Query ID = root_20191209085900_61f6754d-b73b-4034-8cac-b25bf8a3b181
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks determined at compile time: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1575879510873_0007, Tracking URL = http://h01:8088/proxy/application_1575879510873_0007/
+Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0007
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
+2019-12-09 08:59:10,382 Stage-1 map = 0%,  reduce = 0%
+2019-12-09 08:59:18,601 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 5.36 sec
+2019-12-09 08:59:25,806 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 9.47 sec
+MapReduce Total cumulative CPU time: 9 seconds 470 msec
+Ended Job = job_1575879510873_0007
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 9.47 sec   HDFS Read: 10463 HDFS Write: 105 SUCCESS
+Total MapReduce CPU Time Spent: 9 seconds 470 msec
+OK
+37202
+Time taken: 27.593 seconds, Fetched: 1 row(s)
+```
+
+
+有趣的是，对总人数的查询：
+
+```sql
+SELECT COUNT(DISTINCT user_id)  FROM million_user_log;
+```
+
+结果仍然是37202，这说明记录中的每个人都至少购买了一件商品
+
+```shell
+    > SELECT COUNT(DISTINCT user_id)  FROM million_user_log;
+Query ID = root_20191209085709_930a6174-b6b3-4c4f-a58e-9a1ea9192813
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks determined at compile time: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1575879510873_0006, Tracking URL = http://h01:8088/proxy/application_1575879510873_0006/
+Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0006
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
+2019-12-09 08:57:19,316 Stage-1 map = 0%,  reduce = 0%
+2019-12-09 08:57:27,521 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 3.89 sec
+2019-12-09 08:57:34,722 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 6.44 sec
+MapReduce Total cumulative CPU time: 6 seconds 440 msec
+Ended Job = job_1575879510873_0006
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 6.44 sec   HDFS Read: 9646 HDFS Write: 105 SUCCESS
+Total MapReduce CPU Time Spent: 6 seconds 440 msec
+OK
+37202
+Time taken: 25.919 seconds, Fetched: 1 row(s)
+```
+
+顺便一提，action为0，1，2，3的各个条目的数量分别是：867472+1102+116856+14570=1000000
+
+---
+
+#### 查询双11那天男女买家购买商品的比例
+
+```sql
+SELECT gender, COUNT(*)
+FROM million_user_log
+WHERE action = 2
+GROUP BY gender
+;
+```
+结果：
+0 39058
+1 38932
+2 38866
+
+```shell
+hive> SELECT gender, COUNT(*)
+    > FROM million_user_log
+    > WHERE action = 2
+    > GROUP BY gender;
+Query ID = root_20191209094446_2119bcf9-d397-408b-b853-4fad13b471f6
+Total jobs = 1
+Launching Job 1 out of 1
+Number of reduce tasks not specified. Estimated from input data size: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1575879510873_0019, Tracking URL = http://h01:8088/proxy/application_1575879510873_0019/
+Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0019
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
+2019-12-09 09:44:55,283 Stage-1 map = 0%,  reduce = 0%
+2019-12-09 09:45:03,573 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 4.82 sec
+2019-12-09 09:45:10,775 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 7.44 sec
+MapReduce Total cumulative CPU time: 7 seconds 440 msec
+Ended Job = job_1575879510873_0019
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 7.44 sec   HDFS Read: 15686 HDFS Write: 147 SUCCESS
+Total MapReduce CPU Time Spent: 7 seconds 440 msec
+OK
+0 39058
+1 38932
+2 38866
+Time taken: 26.692 seconds, Fetched: 3 row(s)
+```
+---
+
+#### 查询双11那天浏览次数前十的品牌
+这个题目的表述有点不太清晰，我决定将“浏览”理解为“点击”
+
+```sql
+SELECT brand_id, 
+COUNT(*) as click_num
+FROM million_user_log
+WHERE action = 0
+GROUP BY brand_id
+ORDER BY click_num DESC
+LIMIT 10
+;
+```
+
+结果:
+1360  49151
+3738  10130
+82  9719
+1446  9426
+6215  8568
+1214  8470
+5376  8282
+2276  7990
+1662  7808
+8235  7661
+
+```shell
+hive> SELECT brand_id, 
+    > COUNT(*) as click_num
+    > FROM million_user_log
+    > WHERE action = 0
+    > GROUP BY brand_id
+    > ORDER BY click_num DESC
+    > LIMIT 10
+    > ;
+Query ID = root_20191209095621_2876c837-2670-4c65-babc-68f2eac87951
+Total jobs = 2
+Launching Job 1 out of 2
+Number of reduce tasks not specified. Estimated from input data size: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1575879510873_0022, Tracking URL = http://h01:8088/proxy/application_1575879510873_0022/
+Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0022
+Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
+2019-12-09 09:56:31,262 Stage-1 map = 0%,  reduce = 0%
+2019-12-09 09:56:39,724 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 5.92 sec
+2019-12-09 09:56:47,967 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 9.95 sec
+MapReduce Total cumulative CPU time: 9 seconds 950 msec
+Ended Job = job_1575879510873_0022
+Launching Job 2 out of 2
+Number of reduce tasks determined at compile time: 1
+In order to change the average load for a reducer (in bytes):
+  set hive.exec.reducers.bytes.per.reducer=<number>
+In order to limit the maximum number of reducers:
+  set hive.exec.reducers.max=<number>
+In order to set a constant number of reducers:
+  set mapreduce.job.reduces=<number>
+Starting Job = job_1575879510873_0023, Tracking URL = http://h01:8088/proxy/application_1575879510873_0023/
+Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0023
+Hadoop job information for Stage-2: number of mappers: 1; number of reducers: 1
+2019-12-09 09:57:03,609 Stage-2 map = 0%,  reduce = 0%
+2019-12-09 09:57:09,796 Stage-2 map = 100%,  reduce = 0%, Cumulative CPU 3.14 sec
+2019-12-09 09:57:15,958 Stage-2 map = 100%,  reduce = 100%, Cumulative CPU 5.05 sec
+MapReduce Total cumulative CPU time: 5 seconds 50 msec
+Ended Job = job_1575879510873_0023
+MapReduce Jobs Launched: 
+Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 9.95 sec   HDFS Read: 14822 HDFS Write: 118302 SUCCESS
+Stage-Stage-2: Map: 1  Reduce: 1   Cumulative CPU: 5.05 sec   HDFS Read: 125837 HDFS Write: 307 SUCCESS
+Total MapReduce CPU Time Spent: 15 seconds 0 msec
+OK
+1360  49151
+3738  10130
+82  9719
+1446  9426
+6215  8568
+1214  8470
+5376  8282
+2276  7990
+1662  7808
+8235  7661
+Time taken: 56.86 seconds, Fetched: 10 row(s)
+```
+
+---
+
+#### 验证阶段一的结果(这里是我没看清楚题目，统计成了全国购买关注量最多的）：
 
 ```sql
 SELECT item_id, 
@@ -211,221 +439,62 @@ OK
 Time taken: 53.473 seconds, Fetched: 20 row(s)
 ```
 
-
 和阶段一MapReduce的结果一致
 
 ---
 
-### 查询双11那天有多少人购买了商品
+#### 第二次验算阶段一
 
-查询购买人数：
-
-```sql
-SELECT COUNT(DISTINCT user_id)  FROM million_user_log WHERE action=2;
-```
-
-结果为*37202*
-
-```shell
-hive> SELECT COUNT(DISTINCT user_id)  FROM million_user_log WHERE action=2;
-Query ID = root_20191209085900_61f6754d-b73b-4034-8cac-b25bf8a3b181
-Total jobs = 1
-Launching Job 1 out of 1
-Number of reduce tasks determined at compile time: 1
-In order to change the average load for a reducer (in bytes):
-  set hive.exec.reducers.bytes.per.reducer=<number>
-In order to limit the maximum number of reducers:
-  set hive.exec.reducers.max=<number>
-In order to set a constant number of reducers:
-  set mapreduce.job.reduces=<number>
-Starting Job = job_1575879510873_0007, Tracking URL = http://h01:8088/proxy/application_1575879510873_0007/
-Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0007
-Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
-2019-12-09 08:59:10,382 Stage-1 map = 0%,  reduce = 0%
-2019-12-09 08:59:18,601 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 5.36 sec
-2019-12-09 08:59:25,806 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 9.47 sec
-MapReduce Total cumulative CPU time: 9 seconds 470 msec
-Ended Job = job_1575879510873_0007
-MapReduce Jobs Launched: 
-Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 9.47 sec   HDFS Read: 10463 HDFS Write: 105 SUCCESS
-Total MapReduce CPU Time Spent: 9 seconds 470 msec
-OK
-37202
-Time taken: 27.593 seconds, Fetched: 1 row(s)
-```
-
-
-有趣的是，对总人数的查询：
+统计购买数量
 
 ```sql
-SELECT COUNT(DISTINCT user_id)  FROM million_user_log;
-```
-
-结果仍然是37202，这说明记录中的每个人都至少购买了一件商品
-
-```shell
-    > SELECT COUNT(DISTINCT user_id)  FROM million_user_log;
-Query ID = root_20191209085709_930a6174-b6b3-4c4f-a58e-9a1ea9192813
-Total jobs = 1
-Launching Job 1 out of 1
-Number of reduce tasks determined at compile time: 1
-In order to change the average load for a reducer (in bytes):
-  set hive.exec.reducers.bytes.per.reducer=<number>
-In order to limit the maximum number of reducers:
-  set hive.exec.reducers.max=<number>
-In order to set a constant number of reducers:
-  set mapreduce.job.reduces=<number>
-Starting Job = job_1575879510873_0006, Tracking URL = http://h01:8088/proxy/application_1575879510873_0006/
-Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0006
-Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
-2019-12-09 08:57:19,316 Stage-1 map = 0%,  reduce = 0%
-2019-12-09 08:57:27,521 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 3.89 sec
-2019-12-09 08:57:34,722 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 6.44 sec
-MapReduce Total cumulative CPU time: 6 seconds 440 msec
-Ended Job = job_1575879510873_0006
-MapReduce Jobs Launched: 
-Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 6.44 sec   HDFS Read: 9646 HDFS Write: 105 SUCCESS
-Total MapReduce CPU Time Spent: 6 seconds 440 msec
-OK
-37202
-Time taken: 25.919 seconds, Fetched: 1 row(s)
-```
-
-顺便一提，action为0，1，2，3的各个条目的数量分别是：867472+1102+116856+14570=1000000
-
----
-
-### 查询双11那天男女买家购买商品的比例
-
-```sql
-SELECT gender, COUNT(*)
+SELECT province, item_id, COUNT(*) AS purchase_num
 FROM million_user_log
 WHERE action = 2
-GROUP BY gender
+GROUP BY province, item_id
+ORDER BY province, purchase_num DESC
 ;
 ```
-结果：
-0 39058
-1 38932
-2 38866
 
-```shell
-hive> SELECT gender, COUNT(*)
-    > FROM million_user_log
-    > WHERE action = 2
-    > GROUP BY gender;
-Query ID = root_20191209094446_2119bcf9-d397-408b-b853-4fad13b471f6
-Total jobs = 1
-Launching Job 1 out of 1
-Number of reduce tasks not specified. Estimated from input data size: 1
-In order to change the average load for a reducer (in bytes):
-  set hive.exec.reducers.bytes.per.reducer=<number>
-In order to limit the maximum number of reducers:
-  set hive.exec.reducers.max=<number>
-In order to set a constant number of reducers:
-  set mapreduce.job.reduces=<number>
-Starting Job = job_1575879510873_0019, Tracking URL = http://h01:8088/proxy/application_1575879510873_0019/
-Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0019
-Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
-2019-12-09 09:44:55,283 Stage-1 map = 0%,  reduce = 0%
-2019-12-09 09:45:03,573 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 4.82 sec
-2019-12-09 09:45:10,775 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 7.44 sec
-MapReduce Total cumulative CPU time: 7 seconds 440 msec
-Ended Job = job_1575879510873_0019
-MapReduce Jobs Launched: 
-Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 7.44 sec   HDFS Read: 15686 HDFS Write: 147 SUCCESS
-Total MapReduce CPU Time Spent: 7 seconds 440 msec
-OK
-0	39058
-1	38932
-2	38866
-Time taken: 26.692 seconds, Fetched: 3 row(s)
-```
----
+输出结果实在太长，发现很多商品只被购买了一次，为了精简数据加入`HAVING purchase_num > 1 `把这些删掉
 
-### 查询双11那天浏览次数前十的品牌
-这个题目的表述有点不太清晰，我决定将“浏览”理解为“点击”
+输出结果还是很长，观察了一下，发现前十的购买量都大于3，于是改为加入`HAVING purchase_num > 3`
 
 ```sql
-SELECT brand_id, 
-COUNT(*) as click_num
+SELECT province, item_id, COUNT(*) AS purchase_num
 FROM million_user_log
-WHERE action = 0
-GROUP BY brand_id
-ORDER BY click_num DESC
-LIMIT 10
+WHERE action = 2
+GROUP BY province, item_id
+HAVING purchase_num > 3
+ORDER BY province, purchase_num DESC
 ;
 ```
 
-结果:
-1360  49151
-3738  10130
-82  9719
-1446  9426
-6215  8568
-1214  8470
-5376  8282
-2276  7990
-1662  7808
-8235  7661
+统计关注数量
 
-```shell
-hive> SELECT brand_id, 
-    > COUNT(*) as click_num
-    > FROM million_user_log
-    > WHERE action = 0
-    > GROUP BY brand_id
-    > ORDER BY click_num DESC
-    > LIMIT 10
-    > ;
-Query ID = root_20191209095621_2876c837-2670-4c65-babc-68f2eac87951
-Total jobs = 2
-Launching Job 1 out of 2
-Number of reduce tasks not specified. Estimated from input data size: 1
-In order to change the average load for a reducer (in bytes):
-  set hive.exec.reducers.bytes.per.reducer=<number>
-In order to limit the maximum number of reducers:
-  set hive.exec.reducers.max=<number>
-In order to set a constant number of reducers:
-  set mapreduce.job.reduces=<number>
-Starting Job = job_1575879510873_0022, Tracking URL = http://h01:8088/proxy/application_1575879510873_0022/
-Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0022
-Hadoop job information for Stage-1: number of mappers: 1; number of reducers: 1
-2019-12-09 09:56:31,262 Stage-1 map = 0%,  reduce = 0%
-2019-12-09 09:56:39,724 Stage-1 map = 100%,  reduce = 0%, Cumulative CPU 5.92 sec
-2019-12-09 09:56:47,967 Stage-1 map = 100%,  reduce = 100%, Cumulative CPU 9.95 sec
-MapReduce Total cumulative CPU time: 9 seconds 950 msec
-Ended Job = job_1575879510873_0022
-Launching Job 2 out of 2
-Number of reduce tasks determined at compile time: 1
-In order to change the average load for a reducer (in bytes):
-  set hive.exec.reducers.bytes.per.reducer=<number>
-In order to limit the maximum number of reducers:
-  set hive.exec.reducers.max=<number>
-In order to set a constant number of reducers:
-  set mapreduce.job.reduces=<number>
-Starting Job = job_1575879510873_0023, Tracking URL = http://h01:8088/proxy/application_1575879510873_0023/
-Kill Command = /usr/local/hadoop/bin/mapred job  -kill job_1575879510873_0023
-Hadoop job information for Stage-2: number of mappers: 1; number of reducers: 1
-2019-12-09 09:57:03,609 Stage-2 map = 0%,  reduce = 0%
-2019-12-09 09:57:09,796 Stage-2 map = 100%,  reduce = 0%, Cumulative CPU 3.14 sec
-2019-12-09 09:57:15,958 Stage-2 map = 100%,  reduce = 100%, Cumulative CPU 5.05 sec
-MapReduce Total cumulative CPU time: 5 seconds 50 msec
-Ended Job = job_1575879510873_0023
-MapReduce Jobs Launched: 
-Stage-Stage-1: Map: 1  Reduce: 1   Cumulative CPU: 9.95 sec   HDFS Read: 14822 HDFS Write: 118302 SUCCESS
-Stage-Stage-2: Map: 1  Reduce: 1   Cumulative CPU: 5.05 sec   HDFS Read: 125837 HDFS Write: 307 SUCCESS
-Total MapReduce CPU Time Spent: 15 seconds 0 msec
-OK
-1360	49151
-3738	10130
-82	9719
-1446	9426
-6215	8568
-1214	8470
-5376	8282
-2276	7990
-1662	7808
-8235	7661
-Time taken: 56.86 seconds, Fetched: 10 row(s)
+根据比例原则，将阈值设为30
+
+```sql
+SELECT province, item_id, COUNT(*) AS attention_num
+FROM million_user_log
+GROUP BY province, item_id
+HAVING attention_num > 29
+ORDER BY province, attention_num DESC
+;
 ```
+
+---
+
+#### 验算阶段三各省销售最好的产品类别
+
+```sql
+SELECT province, cat_id, COUNT(*) AS purchase_num
+FROM million_user_log
+WHERE action = 2
+GROUP BY province, cat_id
+HAVING purchase_num > 57
+ORDER BY province, purchase_num DESC
+;
+```
+
+结果存于目录下另一文件

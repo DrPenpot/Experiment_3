@@ -115,4 +115,68 @@ only showing top 20 rows
 
 ---
 
-####
+####统计各省销售最好的产品类别前十（销售最多前10的产品类别）
+
+因为spark-shell的中文显示问题，省份一直无法处理，我决定直接对数据集进行预处理，按下表将省份的中文转为一个号码。
+
+```
+11 北京市
+12 天津市
+13 河北
+14 山西
+15 内蒙古
+21 辽宁
+22 吉林
+23 黑龙江
+31 上海市
+32 江苏
+33 浙江
+34 安徽
+35 福建
+36 江西
+37 山东
+41 河南
+42 湖北
+43 湖南
+44 广东
+45 广西
+46 海南
+50 重庆市
+51 四川
+52 贵州
+53 云南
+54 西藏
+61 陕西
+62 甘肃
+63 青海
+64 宁夏
+65 新疆
+71 台湾
+81 香港
+82 澳门
+```
+
+本来写了MR的程序来处理，但是因为MR好像中文识别也不是很成功，我最后用了很笨的方法，直接在文本编辑器里查找替换。
+
+后来又发现，编码应该只是shell的问题，输出文件只有可以正常显示。
+
+```scala
+val mostPurchasedCat = spark.sql("SELECT province, cat_id, COUNT(*) AS purchase_num FROM mlog WHERE action =2 GROUP BY province, cat_id HAVING purchase_num > 57 ORDER BY province, purchase_num DESC")
+
+val mostPurchasedCat_output = mostPurchasedCat.coalesce(1) //避免输出很多小文件，这样把可以把整个表作为一个文件输出
+
+mostPurchasedCat_output.write.mode("overwrite").option("header","true").option("encoding","UTF-8").option("sep",",").csv("file:///usr/FBDP/mostPurchasedCat")
+```
+
+输出结果在目录的另一个文件夹下`Experiment_3/stage_3/mostPurchasedCat`
+
+---
+
+#### 统计各省的双十一前十热门销售产品
+
+```scala
+val mostPurchasedItemGroupedByProvince = spark.sql("SELECT province, item_id, COUNT(*) as purchase_num FROM mlog WHERE action = 2 GROUP BY province, item_id HAVING purchase_num > 3 ORDER BY province, purchase_num DESC")
+
+val mostPurchasedItemGroupedByProvince_output = mostPurchasedItemGroupedByProvince.coalesce(1)
+
+mostPurchasedItemGroupedByProvince_output.write.mode("overwrite").option("header","true").option("encoding","UTF-8").option("sep",",").csv("file:///usr/FBDP/mostPurchasedItem")
