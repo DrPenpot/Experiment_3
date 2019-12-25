@@ -42,13 +42,10 @@ val lsvc_output = model_lsvc.transform(test)
 lsvc_output.coalesce(1).write.mode("overwrite").option("header","true").option("encoding","UTF-8").option("sep",",").json("file:///usr/FBDP/lsvc_output") //输出时不可以用csv格式，因为表格中含有不支持的类型，<type:tinyint,size:int,indices:array<int>,values:array<double>>
 
 lr_output.coalesce(1).write.mode("overwrite").option("header","true").option("encoding","UTF-8").option("sep",",").json("file:///usr/FBDP/lr_output")
-
-
-
-
 ```
 ---
 
 ####结果：
 
 发现所有数据的prediction都是0.0，这可能是由于训练集中的数据每个分类中0的数量远大于1的数量，导致训练出的分类器分出的所有类别的结果都是0
+

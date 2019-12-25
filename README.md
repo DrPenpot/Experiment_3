@@ -1,6 +1,6 @@
 # Experiment_3
 
-详细的报告在各阶段文件夹的`README.md`中
+详细的报告在各阶段文件夹的`README.md`中，截屏在各个阶段的`screenshots`文件夹中
 
 这里大概说一下主要遇的问题：
 
